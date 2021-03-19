@@ -1,0 +1,104 @@
+name: Tests
+on: [pull_request]
+
+env:
+    COMPOSER_TOKEN: false
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php-version: ["7.4", "8.0"]
+
+    env:
+      EXECUTE_COVERAGE: ${{ matrix.php == '7.4' }}
+      MEASURE_COVERAGE: false
+      CLOVER_PATH: ".clover.xml"
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          extensions: mbstring, intl, curl, json
+          tools: composer:v2
+          ini-values: xdebug.mode=coverage
+
+      - name: Validate composer
+        run: composer validate
+
+      - name: Get Composer Cache Directory
+        id: composer-cache
+        run: |
+          echo "::set-output name=dir::$(composer config cache-files-dir)"
+
+      - uses: actions/cache@v2
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: Login composer
+        if: env.COMPOSER_TOKEN != 'false'
+        run: composer config -g github-oauth.github.com ${{ secrets.COMPOSER_TOKEN }}
+
+      - name: Install dependencies
+        run: composer install -n --no-suggest
+
+      - name: Run PhpUnit with coverage
+        if: env.EXECUTE_COVERAGE == 'true'
+        run: php vendor/bin/phpunit --testdox --colors=always --coverage-clover ${{ env.CLOVER_PATH }}
+
+      - name: Run PhpUnit
+        if: env.EXECUTE_COVERAGE != 'true'
+        run: php vendor/bin/phpunit --testdox --colors=always
+
+      - name: Coverage monitor
+        if: env.EXECUTE_COVERAGE == 'true'
+        uses: slavcodev/coverage-monitor-action@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          clover_file: ${{ env.CLOVER_PATH }}
+          threshold_alert: 0
+          threshold_warning: 50
+          comment: ${{ env.MEASURE_COVERAGE }}
+          comment_mode: replace
+
+  lint:
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 1
+      matrix:
+        php-version: ["7.4"]
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          extensions: mbstring, intl, curl, json
+          tools: composer:v1
+          ini-values: xdebug.mode=coverage
+
+      - name: Get Composer Cache Directory
+        id: composer-cache
+        run: |
+          echo "::set-output name=dir::$(composer config cache-files-dir)"
+      - uses: actions/cache@v2
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: Install dependencies
+        run: composer install -n --no-suggest
+
+      - name: Lint code
+        run: php vendor/bin/php-cs-fixer fix -vv --dry-run
