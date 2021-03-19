@@ -1,9 +1,6 @@
 name: Tests
 on: [pull_request, push]
 
-env:
-    COMPOSER_TOKEN: false
-
 jobs:
   unit-tests:
     runs-on: ubuntu-latest
@@ -12,7 +9,7 @@ jobs:
         php-version: ["7.4", "8.0"]
 
     env:
-      EXECUTE_COVERAGE: ${{ matrix.php == '7.4' }}
+      EXECUTE_COVERAGE: ${{ matrix.php-version == '7.4' }}
       MEASURE_COVERAGE: false
       CLOVER_PATH: ".clover.xml"
 
@@ -21,6 +18,8 @@ jobs:
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
+        env:
+          COMPOSER_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           php-version: ${{ matrix.php-version }}
           extensions: mbstring, intl, curl, json
@@ -42,12 +41,12 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-composer-
 
-      - name: Login composer
-        if: env.COMPOSER_TOKEN != 'false'
-        run: composer config -g github-oauth.github.com ${{ secrets.COMPOSER_TOKEN }}
+#      - name: Login composer
+#        if: env.COMPOSER_TOKEN != 'false'
+#        run: composer config -g github-oauth.github.com ${{ secrets.COMPOSER_TOKEN }}
 
       - name: Install dependencies
-        run: composer install -n --no-suggest
+        run: composer install -n
 
       - name: Run PhpUnit with coverage
         if: env.EXECUTE_COVERAGE == 'true'
@@ -58,7 +57,7 @@ jobs:
         run: php vendor/bin/phpunit --testdox --colors=always
 
       - name: Coverage monitor
-        if: env.EXECUTE_COVERAGE == 'true'
+        if: env.MEASURE_COVERAGE == 'true'
         uses: slavcodev/coverage-monitor-action@v1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -80,6 +79,8 @@ jobs:
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
+        env:
+          COMPOSER_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           php-version: ${{ matrix.php-version }}
           extensions: mbstring, intl, curl, json
@@ -98,7 +99,7 @@ jobs:
             ${{ runner.os }}-composer-
 
       - name: Install dependencies
-        run: composer install -n --no-suggest
+        run: composer install -n
 
       - name: Lint code
         run: php vendor/bin/php-cs-fixer fix -vv --dry-run
