@@ -5,8 +5,7 @@
          executionOrder="depends,defects"
          beStrictAboutOutputDuringTests="true"
          beStrictAboutTodoAnnotatedTests="true"
-         verbose="true"
-         cacheResultFile=".phpunit/cache.txt">
+         verbose="true">
     <testsuites>
         <testsuite name="default">
             <directory>tests</directory>
