@@ -67,6 +67,43 @@ jobs:
           comment: ${{ env.MEASURE_COVERAGE }}
           comment_mode: replace
 
+  static-analysis:
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 1
+      matrix:
+        php-version: ["7.4"]
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        env:
+          COMPOSER_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          php-version: ${{ matrix.php-version }}
+          extensions: mbstring, intl, curl, json
+          tools: composer:v1
+          ini-values: xdebug.mode=coverage
+
+      - name: Get Composer Cache Directory
+        id: composer-cache
+        run: |
+          echo "::set-output name=dir::$(composer config cache-files-dir)"
+      - uses: actions/cache@v2
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: Install dependencies
+        run: composer install -n
+
+      - name: Analyze code
+        run: php vendor/bin/psalm
+
   lint:
     runs-on: ubuntu-latest
     strategy:

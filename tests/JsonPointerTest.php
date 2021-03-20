@@ -8,6 +8,9 @@ use Slavcodev\JsonPointer\InvalidArgumentException;
 use Slavcodev\JsonPointer\JsonPointer;
 use function array_shift;
 
+/**
+ * @psalm-suppress PropertyNotSetInConstructor
+ */
 final class JsonPointerTest extends TestCase
 {
     /**
@@ -55,6 +58,9 @@ final class JsonPointerTest extends TestCase
         self::assertFalse($pointer->anchored);
     }
 
+    /**
+     * @psalm-return iterable<string,array{0:string,1:array<int,string>}>
+     */
     public function provideJsonPointers(): iterable
     {
         return [
@@ -82,7 +88,8 @@ final class JsonPointerTest extends TestCase
     public function provideJsonPointersAndUriFragments(): iterable
     {
         foreach ($this->provideJsonPointers() as $key => $set) {
-            $value = array_shift($set);
+            $value = $set[0];
+            array_shift($set);
             yield "{$key} - {$value}" => [$value, ...$set, false];
             yield "{$key} - #{$value}" => ["#{$value}", ...$set, true];
         }
