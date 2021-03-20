@@ -37,7 +37,7 @@ Contributions are welcome and will be fully credited. Please see [CONTRIBUTING](
 
 ## Credits
 
-[To All Awesome Contributors](../../contributors)
+[To all awesome contributors](../../contributors)
 
 ## License
 
