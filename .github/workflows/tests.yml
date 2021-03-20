@@ -3,6 +3,7 @@ on: [pull_request, push]
 
 jobs:
   unit-tests:
+    name: Unit tests
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -41,9 +42,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-composer-
 
-#      - name: Login composer
-#        if: env.COMPOSER_TOKEN != 'false'
-#        run: composer config -g github-oauth.github.com ${{ secrets.COMPOSER_TOKEN }}
+      - name: Login composer
+        if: env.COMPOSER_TOKEN != 'false'
+        run: composer config -g github-oauth.github.com ${{ secrets.COMPOSER_TOKEN }}
 
       - name: Install dependencies
         run: composer install -n
@@ -57,7 +58,7 @@ jobs:
         run: php vendor/bin/phpunit --testdox --colors=always
 
       - name: Coverage monitor
-        if: env.MEASURE_COVERAGE == 'true'
+        if: github.event_name == 'pull_request'
         uses: slavcodev/coverage-monitor-action@v1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -68,11 +69,12 @@ jobs:
           comment_mode: replace
 
   static-analysis:
+    name: Static Analysis
     runs-on: ubuntu-latest
     strategy:
       max-parallel: 1
       matrix:
-        php-version: ["7.4"]
+        php-version: ["7.4", "8.0"]
 
     steps:
       - uses: actions/checkout@v2
@@ -105,11 +107,12 @@ jobs:
         run: php vendor/bin/psalm
 
   lint:
+    name: Coding Standards
     runs-on: ubuntu-latest
     strategy:
       max-parallel: 1
       matrix:
-        php-version: ["7.4"]
+        php-version: ["7.4", "8.0"]
 
     steps:
       - uses: actions/checkout@v2
